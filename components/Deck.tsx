@@ -25,6 +25,7 @@ const emptySnapshot: ObsSnapshot = {
   sceneItems: {},
   streaming: false,
   recording: false,
+  mutedInputs: {},
 };
 
 export default function Deck() {
@@ -59,6 +60,14 @@ export default function Deck() {
       clientRef.current?.disconnect().catch(() => {});
     };
   }, []);
+
+  useEffect(() => {
+    if (status !== "connected") return;
+    const muteInputs = keys.flatMap((k) =>
+      k.action.kind === "toggle-mute" ? [k.action.inputName] : [],
+    );
+    clientRef.current?.syncMuteStates(muteInputs).catch(() => {});
+  }, [status, keys]);
 
   const handleConnect = useCallback(async (next: ConnectionSettings) => {
     saveConnectionSettings(next);

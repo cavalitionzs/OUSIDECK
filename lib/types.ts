@@ -28,4 +28,5 @@ export type ObsSnapshot = {
   sceneItems: Record<string, SceneItem[]>;
   streaming: boolean;
   recording: boolean;
+  mutedInputs: Record<string, boolean>; // inputName -> muted?
 };

@@ -21,6 +21,7 @@ const config: Config = {
           faint: "#5B606B",
         },
         live: "#E4572E",
+        danger: "#E5484D",
         good: "#4FD1A5",
       },
       fontFamily: {

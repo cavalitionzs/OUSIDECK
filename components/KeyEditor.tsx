@@ -17,14 +17,20 @@ export default function KeyEditor({
   onClose: () => void;
 }) {
   const [label, setLabel] = useState(initial?.label ?? "");
-  const [kind, setKind] = useState<KeyAction["kind"]>(initial?.action.kind ?? "toggle-source");
+  const [kind, setKind] = useState<KeyAction["kind"]>(
+    initial?.action.kind ?? "toggle-source",
+  );
   const [sceneName, setSceneName] = useState(
-    initial?.action.kind === "toggle-source" || initial?.action.kind === "switch-scene"
+    initial?.action.kind === "toggle-source" ||
+      initial?.action.kind === "switch-scene"
       ? initial.action.sceneName
-      : snapshot.currentScene ?? snapshot.scenes[0] ?? ""
+      : (snapshot.currentScene ?? snapshot.scenes[0] ?? ""),
   );
   const [sourceName, setSourceName] = useState(
-    initial?.action.kind === "toggle-source" ? initial.action.sourceName : ""
+    initial?.action.kind === "toggle-source" ? initial.action.sourceName : "",
+  );
+  const [inputName, setInputName] = useState(
+    initial?.action.kind === "toggle-mute" ? initial.action.inputName : "",
   );
 
   const sourcesForScene = snapshot.sceneItems[sceneName] ?? [];
@@ -40,7 +46,7 @@ export default function KeyEditor({
       case "toggle-stream":
         return { kind };
       case "toggle-mute":
-        return { kind, inputName: sourceName };
+        return { kind, inputName: inputName.trim() };
     }
   }
 
@@ -128,8 +134,8 @@ export default function KeyEditor({
             <label className="flex flex-col gap-1.5">
               <span className="text-sm text-ink-muted">Input name</span>
               <input
-                value={sourceName}
-                onChange={(e) => setSourceName(e.target.value)}
+                value={inputName}
+                onChange={(e) => setInputName(e.target.value)}
                 placeholder="Mic/Aux"
                 className="rounded-md border border-key-border bg-panel px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-live"
               />
@@ -157,7 +163,9 @@ export default function KeyEditor({
             </button>
             <button
               onClick={handleSave}
-              disabled={!label.trim() || (kind === "toggle-source" && !sourceName)}
+              disabled={
+                !label.trim() || (kind === "toggle-source" && !sourceName)
+              }
               className="rounded-md bg-live px-3 py-2 text-sm font-medium text-panel disabled:cursor-not-allowed disabled:opacity-40"
             >
               Save

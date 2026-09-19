@@ -24,6 +24,7 @@ export class ObsClient {
     sceneItems: {},
     streaming: false,
     recording: false,
+    mutedInputs: {},
   };
 
   constructor(events: ObsClientEvents = {}) {
@@ -58,13 +59,22 @@ export class ObsClient {
       this.emitSnapshot();
     });
 
+    this.obs.on("InputMuteStateChanged", ({ inputName, inputMuted }) => {
+      this.snapshot.mutedInputs = { ...this.snapshot.mutedInputs, [inputName]: inputMuted };
+      this.emitSnapshot();
+    });
+
     this.obs.on("ConnectionClosed", () => {
       this.events.onStatusChange?.("idle", "Connection closed");
     });
   }
 
   private emitSnapshot() {
-    this.events.onSnapshot?.({ ...this.snapshot, sceneItems: { ...this.snapshot.sceneItems } });
+    this.events.onSnapshot?.({ 
+      ...this.snapshot, 
+      sceneItems: { ...this.snapshot.sceneItems },
+      mutedInputs: { ...this.snapshot.mutedInputs },
+    });
   }
 
   async connect(url: string, password: string) {
@@ -100,6 +110,34 @@ export class ObsClient {
     this.snapshot.recording = recording;
 
     await Promise.all(sceneNames.map((name) => this.refreshSceneItems(name)));
+    this.emitSnapshot();
+  }
+  
+  /**
+   * Reads the mute state of the given inputs (the ones used by mute keys).
+   * Looking inputs up by name also works for OBS's global audio devices
+   * such as "Mic/Aux" and "Desktop Audio".
+   */
+  async syncMuteStates(inputNames: string[]) {
+    const unique = Array.from(new Set(inputNames.map((n) => n.trim()).filter(Boolean)));
+    const results = await Promise.all(
+      unique.map(async (inputName) => {
+        try {
+          const { inputMuted } = await this.obs.call("GetInputMute", { inputName });
+          return [inputName, inputMuted] as const;
+        } catch (err) {
+          console.warn(
+            `[OUSIDECK] Could not read mute state for input "${inputName}". ` +
+              `Check that the name matches the Audio Mixer in OBS exactly.`,
+            err
+          );
+          return null;
+        }
+      })
+    );
+    const next = { ...this.snapshot.mutedInputs };
+    for (const r of results) if (r) next[r[0]] = r[1];
+    this.snapshot.mutedInputs = next;
     this.emitSnapshot();
   }
 
